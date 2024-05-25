@@ -1,10 +1,39 @@
-import React, { useState } from "react";
-import { DarkMode, LightMode, RemoveCircleOutline } from "@mui/icons-material";
+import React, { useState, useEffect } from "react";
+import {
+  DarkMode,
+  LightMode,
+  RemoveCircleOutline,
+  Edit,
+} from "@mui/icons-material";
 import { Button, Checkbox, TextField } from "@mui/material";
 
 function ToDo() {
   const [theme, setTheme] = useState("light");
   const [tasks, setTasks] = useState([]);
+  const [editTaskId, setEditTaskId] = useState(null);
+  const [editTaskName, setEditTaskName] = useState("");
+
+  useEffect(() => {
+    const savedTasks = JSON.parse(localStorage.getItem("tasks"));
+    if (savedTasks) {
+      setTasks(savedTasks);
+    }
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === "dark") {
+        darkTheme();
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -51,6 +80,24 @@ function ToDo() {
         return task;
       })
     );
+  };
+
+  const handleEditTask = (id, name) => {
+    setEditTaskId(id);
+    setEditTaskName(name);
+  };
+
+  const handleSaveEditTask = (id) => {
+    setTasks(
+      tasks.map((task) => {
+        if (task.id === id) {
+          return { ...task, name: editTaskName };
+        }
+        return task;
+      })
+    );
+    setEditTaskId(null);
+    setEditTaskName("");
   };
 
   return (
@@ -100,17 +147,40 @@ function ToDo() {
                 checked={task.completed}
                 onChange={() => handleCheckbox(task.id)}
               />
-              <h3
-                style={task.completed ? { textDecoration: "line-through" } : {}}
-              >
-                {task.name}
-              </h3>
+              {editTaskId === task.id ? (
+                <TextField
+                  value={editTaskName}
+                  onChange={(e) => setEditTaskName(e.target.value)}
+                  onBlur={() => handleSaveEditTask(task.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSaveEditTask(task.id);
+                    }
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <h3
+                  style={
+                    task.completed ? { textDecoration: "line-through" } : {}
+                  }
+                  onDoubleClick={() => handleEditTask(task.id, task.name)}
+                >
+                  {task.name}
+                </h3>
+              )}
               <div className="removeBtn">
                 <Button
                   variant="text"
                   onClick={() => handleRemoveTask(task.id)}
                 >
                   <RemoveCircleOutline />
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => handleEditTask(task.id, task.name)}
+                >
+                  <Edit />
                 </Button>
               </div>
             </div>
